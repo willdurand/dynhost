@@ -3,28 +3,44 @@ use reqwest::Client;
 use std::env;
 use std::process;
 
+#[cfg(test)]
+use mockito;
+
 macro_rules! ensure_env {
     ($var:expr) => {
         match env::var($var) {
             Ok(value) => value,
             Err(_) => {
-                return Err(format!("{} must be set", $var));
+                eprintln!("{} must be set", $var);
+                process::exit(1);
             }
         };
     };
 }
 
-fn update_dynhost(app_version: String) -> Result<String, String> {
-    let username = ensure_env!("DYNHOST_USERNAME");
-    let password = ensure_env!("DYNHOST_PASSWORD");
-    let hostname = ensure_env!("DYNHOST_HOSTNAME");
-
+fn update_dynhost(
+    app_version: String,
+    username: String,
+    password: String,
+    hostname: String,
+) -> Result<String, String> {
+    #[cfg(not(test))]
     let get_ip_url = "https://ipv4.icanhazip.com";
+    #[cfg(test)]
+    let get_ip_url = &mockito::server_url();
+
+    #[cfg(not(test))]
     let ovh_url = "http://www.ovh.com/nic/update";
+    #[cfg(test)]
+    let ovh_url = &mockito::server_url();
 
     let client = Client::new();
     match client.get(get_ip_url).send() {
         Ok(mut get_ip) => {
+            if !get_ip.status().is_success() {
+                return Err("could not retrieve the current IP".into());
+            }
+
             let my_ip = get_ip.text().expect("invalid or no IP retrieved");
 
             let update_dns = client
@@ -43,12 +59,12 @@ fn update_dynhost(app_version: String) -> Result<String, String> {
                 Ok(my_ip)
             } else {
                 Err(format!(
-                    "could not update the DynHOST: {:?}",
+                    "could not update the DynHOST (status = {:?})",
                     update_dns.status()
                 ))
             }
         }
-        Err(err) => Err(format!("could not retrieve the current IP ({})", err)),
+        Err(err) => Err(format!("could not reach the IP service ({:?})", err)),
     }
 }
 
@@ -62,13 +78,82 @@ fn main() {
         }
     }
 
-    match update_dynhost(app_version) {
+    let username = ensure_env!("DYNHOST_USERNAME");
+    let password = ensure_env!("DYNHOST_PASSWORD");
+    let hostname = ensure_env!("DYNHOST_HOSTNAME");
+
+    match update_dynhost(app_version, username, password, hostname) {
         Ok(ip) => {
             println!("Successfully updated DynHOST with IP: {}", ip);
-        },
+        }
         Err(err) => {
-            eprintln!("ERROR: {}", err);
+            eprintln!("Error: {}", err);
             process::exit(1);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mockito::mock;
+
+    #[test]
+    fn it_returns_the_updated_ip_on_success() {
+        let _ = env_logger::try_init();
+
+        let app_version = env!("CARGO_PKG_VERSION").into();
+
+        let username = "user".to_string();
+        let password = "pass".to_string();
+        let hostname = "host".to_string();
+
+        let ip = "1.1.1.1";
+        let _m1 = mock("GET", "/").with_status(200).with_body(ip).create();
+
+        let url = format!("/?system=dyndns&hostname={}&myip={}", hostname, ip);
+        let _m2 = mock("GET", url.as_str()).with_status(200).create();
+
+        let res = update_dynhost(app_version, username, password, hostname);
+        assert_eq!(Ok(ip.into()), res);
+    }
+
+    #[test]
+    fn it_returns_an_error_when_get_ip_fails() {
+        let _ = env_logger::try_init();
+
+        let app_version = env!("CARGO_PKG_VERSION").into();
+
+        let username = "user".to_string();
+        let password = "pass".to_string();
+        let hostname = "host".to_string();
+
+        let _m = mock("GET", "/").with_status(400).create();
+
+        let res = update_dynhost(app_version, username, password, hostname);
+        assert_eq!(Err("could not retrieve the current IP".into()), res);
+    }
+
+    #[test]
+    fn it_returns_an_error_when_update_fails() {
+        let _ = env_logger::try_init();
+
+        let app_version = env!("CARGO_PKG_VERSION").into();
+
+        let username = "user".to_string();
+        let password = "pass".to_string();
+        let hostname = "host".to_string();
+
+        let ip = "1.1.1.1";
+        let _m1 = mock("GET", "/").with_status(200).with_body(ip).create();
+
+        let url = format!("/?system=dyndns&hostname={}&myip={}", hostname, ip);
+        let _m2 = mock("GET", url.as_str()).with_status(400).create();
+
+        let res = update_dynhost(app_version, username, password, hostname);
+        assert_eq!(
+            Err("could not update the DynHOST (status = 400)".into()),
+            res
+        );
     }
 }
