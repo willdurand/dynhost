@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONTAINER_WORKDIR=/work
+DOCKER_IMAGE=willdurand/rust-armv6
+DOCKER_TAG=latest
+
+docker run --rm -t \
+           -u "$(id -u):$(id -g)" \
+           -e "HOME=${CONTAINER_WORKDIR}" \
+           -e "PKG_CONFIG_ALLOW_CROSS=1" \
+           -w "${CONTAINER_WORKDIR}" \
+           -v "$(pwd):${CONTAINER_WORKDIR}" \
+           -v "${HOME}/.cargo/registry:/usr/local/cargo/registry" \
+           "${DOCKER_IMAGE}:${DOCKER_TAG}" \
+           "$@"

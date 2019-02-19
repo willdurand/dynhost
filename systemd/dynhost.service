@@ -1,0 +1,21 @@
+[Unit]
+Description=Automatically update a dynamic DNS record for an OVH domain
+Requires=network.target
+
+[Service]
+ExecStart=/usr/local/bin/dynhost
+Type=simple
+User=dynhost
+EnvironmentFile=/home/dynhost/.dynhost.conf
+
+; cf. https://www.darkcoding.net/software/the-joy-of-systemd/
+; /usr, /boot and /etc are read-only
+ProtectSystem=full
+; $HOME is read only ..
+ProtectHome=read-only
+; /tmp is isolated from all other processes
+PrivateTmp=true
+; Minimal /dev, no physical device access
+PrivateDevices=true
+; Don't allow process to raise privileges (e.g. disable suid)
+NoNewPrivileges=true
