@@ -2,6 +2,7 @@
 Description=Run dynhost on boot and hourly
 
 [Timer]
+Unit=dynhost.service
 OnBootSec=5min
 OnUnitActiveSec=1h
 
