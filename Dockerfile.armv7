@@ -1,0 +1,38 @@
+FROM rust:1.32.0-slim-stretch
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# OpenSSL
+ENV OPENSSL_VERSION=1.0.2q
+ENV OPENSSL_STATIC=1
+ENV OPENSSL_LIB_DIR=/openssl
+ENV OPENSSL_INCLUDE_DIR=/openssl/include
+
+RUN dpkg --add-architecture armhf
+RUN apt-get update -qq && \
+    # Install dependencies
+    apt-get install -qq --no-install-recommends \
+        git \
+        make \
+        wget \
+        pkg-config \
+        libc6-dev:armhf \
+        gcc-arm-linux-gnueabihf && \
+        # Cross-compile OpenSSL
+    wget -q -O /tmp/openssl.tar.gz "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz" && \
+        cd /tmp && \
+        tar xzf openssl.tar.gz &&\
+        mv "/tmp/openssl-${OPENSSL_VERSION}" /openssl && \
+        cd /openssl && \
+        ./Configure linux-generic32 shared --cross-compile-prefix=arm-linux-gnueabihf- && \
+        make && \
+    apt-get purge -qq \
+        git \
+        make \
+        wget && \
+    apt-get autoremove -qq --purge && \
+    apt-get clean -qq && rm -fr /var/lib/apt/* /var/cache/apt/*
+
+RUN rustup target add armv7-unknown-linux-gnueabihf
+
+ENTRYPOINT ["cargo", "build", "--target=armv7-unknown-linux-gnueabihf"]

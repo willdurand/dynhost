@@ -71,6 +71,25 @@ You will find the binary in `target/arm-unknown-linux-gnueabihf/release/`.
 docker build -t "willdurand/rust-armv6:latest" -f Dockerfile.armv6 .
 ```
 
+### Cross-compilation for ARMv7
+
+This repository contains a set of tools to cross-compile `dynhost` for Orange Pi
+(ARMv7).
+
+Run the command below to cross-compile `dynhost` for ARMv7:
+
+```
+./cross-compile-armv7 --release
+```
+
+You will find the binary in `target/armv7-unknown-linux-gnueabihf/release/`.
+
+**Note:** the Docker image can be built with the following command:
+
+```
+docker build -t "willdurand/rust-armv7:latest" -f Dockerfile.armv7 .
+```
+
 ## License
 
 This project is released under the MIT License. See the bundled [LICENSE
