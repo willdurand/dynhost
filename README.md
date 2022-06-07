@@ -1,5 +1,7 @@
 # dynhost
 
+[![CI](https://github.com/willdurand/dynhost/actions/workflows/ci.yml/badge.svg)](https://github.com/willdurand/dynhost/actions/workflows/ci.yml)
+
 `dynhost` is a tiny CLI that updates a dynamic DNS record (DynHost) for a domain
 hosted by [OVH](https://www.ovh.com). It relies on
 [icanhazip.com](http://ipv4.icanhazip.com/) to retrieve the public IP and calls
