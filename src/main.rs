@@ -14,7 +14,7 @@ macro_rules! ensure_env {
                 eprintln!("{} must be set", $var);
                 process::exit(1);
             }
-        };
+        }
     };
 }
 
