@@ -1,5 +1,5 @@
+use reqwest::blocking::Client;
 use reqwest::header::USER_AGENT;
-use reqwest::Client;
 use std::env;
 use std::process;
 
@@ -36,7 +36,7 @@ fn update_dynhost(
 
     let client = Client::new();
     match client.get(get_ip_url).send() {
-        Ok(mut get_ip) => {
+        Ok(get_ip) => {
             if !get_ip.status().is_success() {
                 return Err("could not retrieve the current IP".into());
             }
