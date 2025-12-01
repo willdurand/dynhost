@@ -9,4 +9,4 @@ reqwest = { version = "0.12.24", features = ["blocking"] }
 
 [dev-dependencies]
 env_logger = { version = "0.11.8", default-features = false }
-mockito = "0.16.0"
+mockito = "1.7.1"
